@@ -40,21 +40,6 @@ class AuthService {
     const newUser = new User(userData);
     const savedUser = await newUser.save();
 
-    // Create default preferences
-    const defaultPreferences = new Preferences({
-      userId: savedUser._id,
-      currency: userData.currency || 'Rs',
-      language: userData.language || 'en',
-      timezone: userData.timezone || 'Asia/Karachi'
-    });
-    await defaultPreferences.save();
-
-    // Create empty cart
-    const newCart = new Cart({
-      userId: savedUser._id
-    });
-    await newCart.save();
-
     // Return user without password
     const userResponse = savedUser.toObject();
     delete userResponse.password;

@@ -46,38 +46,23 @@ const updateProfile = async (req, res, next) => {
 };
 
 const addNewUser = async (req, res, next) => {
-  try {
-    // Validate request data
-    const { error } = validations.registrationValidation(req.body);
-    if (error) {
-      return res.status(400).json({
-        success: false,
-        message: "Validation failed",
-        errors: error.details.map(detail => ({
-          field: detail.path.join('.'),
-          message: detail.message,
-          value: detail.context?.value
-        }))
-      });
-    }
-
-    // Create DTO from request data
-    const userData = new UserRegistrationDTO(req.body);
-    
-    // Handle profile image if provided
-    const profileImagePath = req.file ? req.file.path : null;
-
-    // Call service layer
-    const user = await AuthService.registerUser(userData, profileImagePath);
-
-    // Create response DTO
-    const userResponse = new UserResponseDTO(user);
-
-    // Send success response
-    sendSuccess(res, 201, "User registered successfully", userResponse);
-  } catch (error) {
-    next(error);
-  }
+   const { error } = validations.registrationValidation(req.body);
+   if (error) {
+     return res.status(400).json({
+       success: false,
+       message: "Validation failed",
+       errors: error.details.map(detail => ({
+         field: detail.path.join('.'),
+         message: detail.message,
+         value: detail.context?.value
+       }))
+     });
+   }
+   const userData = new UserRegistrationDTO(req.body);
+   const profileImagePath = req.file ? req.file.path : null;
+   const user = await AuthService.registerUser(userData, profileImagePath);
+   const userResponse = new UserResponseDTO(user);
+   sendSuccess(res, 201, "User registered successfully", userResponse);
 };
 
 const login = async (req, res, next) => {
