@@ -75,7 +75,37 @@ const handleUploadError = (error, req, res, next) => {
   next(error);
 };
 
+// Configure storage for auction images
+const auctionImageStorage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const auctionImagesDir = path.join(uploadsDir, 'auction-images');
+    if (!fs.existsSync(auctionImagesDir)) {
+      fs.mkdirSync(auctionImagesDir, { recursive: true });
+    }
+    cb(null, auctionImagesDir);
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const ext = path.extname(file.originalname);
+    cb(null, 'auction-' + uniqueSuffix + ext);
+  }
+});
+
+// Configure multer for auction image uploads (multiple)
+const uploadAuctionImagesMulter = multer({
+  storage: auctionImageStorage,
+  fileFilter: imageFileFilter,
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit per image
+    files: 10 // Max 10 images
+  }
+});
+
+// Middleware for multiple auction images upload
+const uploadAuctionImages = uploadAuctionImagesMulter.array('images', 10);
+
 module.exports = {
   uploadSingleProfileImage,
+  uploadAuctionImages,
   handleUploadError
 };

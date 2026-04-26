@@ -5,9 +5,18 @@ const {
   AuthResponseDTO
 } = require('./auth.dto');
 
+const {
+  AuctionCreateDTO,
+  AuctionResponseDTO,
+  AuctionListDTO
+} = require('./auction.dto');
+
 module.exports = {
   UserRegistrationDTO,
   UserLoginDTO,
   UserResponseDTO,
-  AuthResponseDTO
+  AuthResponseDTO,
+  AuctionCreateDTO,
+  AuctionResponseDTO,
+  AuctionListDTO
 };

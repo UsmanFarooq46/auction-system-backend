@@ -132,10 +132,57 @@ const auctionRegistrationValidation = (data) => {
   return schema.validate(data);
 };
 
+const auctionCreateValidation = (data) => {
+  const schema = joi.object({
+    title: joi.string().min(10).max(100).required().messages({
+      'string.min': 'Title must be at least 10 characters long',
+      'string.max': 'Title cannot exceed 100 characters',
+      'any.required': 'Title is required'
+    }),
+    description: joi.string().min(5).max(1000).required().messages({
+      'string.min': 'Description must be at least 5 characters long',
+      'string.max': 'Description cannot exceed 1000 characters',
+      'any.required': 'Description is required'
+    }),
+    category: joi.string().valid('electronics', 'art-collectibles', 'jewelry', 'vehicles', 'real-estate', 'antiques', 'books', 'clothing', 'sports', 'other').required(),
+    condition: joi.string().valid('new', 'like-new', 'good', 'fair', 'poor').required(),
+    startingPrice: joi.number().min(1).required(),
+    reservePrice: joi.number().min(1).optional(),
+    startDate: joi.date().min('now').required(),
+    endDate: joi.date().greater(joi.ref('startDate')).required(),
+    duration: joi.number().min(1).max(90).required(),
+    location: joi.string().min(5).required(),
+    isPublic: joi.boolean().optional(),
+    existingImages: joi.any().optional()
+  });
+  return schema.validate(data);
+};
+
+const auctionUpdateValidation = (data) => {
+  const schema = joi.object({
+    title: joi.string().min(10).max(100).optional(),
+    description: joi.string().min(5).max(1000).optional(),
+    category: joi.string().valid('electronics', 'art-collectibles', 'jewelry', 'vehicles', 'real-estate', 'antiques', 'books', 'clothing', 'sports', 'other').optional(),
+    condition: joi.string().valid('new', 'like-new', 'good', 'fair', 'poor').optional(),
+    startingPrice: joi.number().min(1).optional(),
+    reservePrice: joi.number().min(1).optional(),
+    startDate: joi.date().optional(),
+    endDate: joi.date().optional(),
+    duration: joi.number().min(1).max(90).optional(),
+    location: joi.string().min(5).optional(),
+    isPublic: joi.boolean().optional(),
+    existingImages: joi.any().optional(),
+    status: joi.string().valid('pending', 'live', 'ended', 'sold', 'unsold', 'cancelled').optional()
+  });
+  return schema.validate(data);
+};
+
 module.exports = {
   registrationValidation,
   loginValidation,
   profileUpdateValidation,
   forgotPassValidations,
   auctionRegistrationValidation,
+  auctionCreateValidation,
+  auctionUpdateValidation,
 };
