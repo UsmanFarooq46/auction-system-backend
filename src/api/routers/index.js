@@ -8,5 +8,7 @@ router.use("/auth",authRouter);
 const adminDefinitions=require("./admin/definitions.router")
 router.use("/admin_definitions",adminDefinitions);
 
+const auctionRouter = require('./auction.router');
+router.use("/auction", auctionRouter);
 
 module.exports = router;
