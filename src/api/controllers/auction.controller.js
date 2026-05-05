@@ -99,6 +99,18 @@ class AuctionController {
   }
 
   /**
+   * Get my bids (auctions where user is highest bidder)
+   */
+  static async getMyBids(req, res, next) {
+    try {
+      const auctions = await AuctionService.getAuctionsByBidder(req.user._id);
+      sendSuccess(res, 200, "My bids fetched successfully", auctions);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * Update auction
    */
   static async updateAuction(req, res, next) {
@@ -167,6 +179,28 @@ class AuctionController {
     try {
       await AuctionService.deleteAuction(req.params.id, req.user._id);
       sendSuccess(res, 200, "Auction deleted successfully");
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Place a bid on an auction
+   */
+  static async placeBid(req, res, next) {
+    try {
+      const { amount } = req.body;
+      if (!amount) {
+        return sendError(res, 400, "Bid amount is required");
+      }
+
+      const auction = await AuctionService.placeBid(
+        req.params.id,
+        req.user._id,
+        amount
+      );
+
+      sendSuccess(res, 200, "Bid placed successfully", auction);
     } catch (error) {
       next(error);
     }

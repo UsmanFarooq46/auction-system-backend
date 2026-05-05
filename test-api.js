@@ -14,7 +14,6 @@ const testUser = {
 
 async function testAPI() {
   try {
-    console.log('🚀 Testing E-commerce User Registration API\n');
 
     // Test 1: User Registration
     console.log('1. Testing User Registration...');

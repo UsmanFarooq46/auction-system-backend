@@ -42,6 +42,9 @@ router.get('/', asyncHandler(AuctionController.getAllAuctions));
 // Get current user's auctions
 router.get('/my-auctions', authVerify, asyncHandler(AuctionController.getMyAuctions));
 
+// Get my bids
+router.get('/my-bids', authVerify, asyncHandler(AuctionController.getMyBids));
+
 // Get auction by ID
 router.get('/:id', asyncHandler(AuctionController.getAuctionById));
 
@@ -50,5 +53,8 @@ router.put('/:id', authVerify, uploadAuctionImages, handleUploadError, asyncHand
 
 // Delete auction
 router.delete('/:id', authVerify, asyncHandler(AuctionController.deleteAuction));
+
+// Place a bid
+router.post('/:id/bid', authVerify, asyncHandler(AuctionController.placeBid));
 
 module.exports = router;

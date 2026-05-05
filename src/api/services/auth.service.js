@@ -17,19 +17,19 @@ class AuthService {
       email: userData.email.toLowerCase(),
       isDeleted: false
     });
-    
+
     if (existingUser) {
       throw new AppError("Email already exists", 400);
     }
 
     // Set default role
     userData.role = userData.role || "customer";
-    
+
     // Handle profile image
     if (profileImagePath) {
       userData.profileImage = profileImagePath;
     }
-    
+
     // Hash password
     if (userData.password) {
       const salt = await bcrypt.genSalt(12);
@@ -43,7 +43,7 @@ class AuthService {
     // Return user without password
     const userResponse = savedUser.toObject();
     delete userResponse.password;
-    
+
     return userResponse;
   }
 
@@ -54,11 +54,11 @@ class AuthService {
    * @returns {Promise<Object>} - User data and token
    */
   static async loginUser(email, password) {
-    const user = await User.findOne({ 
+    const user = await User.findOne({
       email: email.toLowerCase(),
-      isDeleted: false 
+      isDeleted: false
     });
-    
+
     if (!user) {
       throw new AppError(`User not found under the email ${email}`, 404);
     }
@@ -77,16 +77,16 @@ class AuthService {
 
     // Update last login
     user.lastLogin = new Date();
-    user.loginAttempts = 0;
+    user.loginAttempts = user.loginAttempts + 1;
     await user.save();
 
     // Generate JWT token
     const token = jwt.sign(
-      { 
-        _id: user._id, 
-        role: user.role, 
+      {
+        _id: user._id,
+        role: user.role,
         email: user.email,
-        date: new Date().toDateString() 
+        date: new Date().toDateString()
       },
       process.env.token_private,
       { expiresIn: "14d" }
@@ -109,7 +109,7 @@ class AuthService {
    */
   static async getUserById(userId) {
     const user = await User.findById(userId).select('-password');
-    
+
     if (!user || user.isDeleted) {
       throw new AppError("User not found", 404);
     }

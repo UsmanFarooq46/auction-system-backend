@@ -1,4 +1,4 @@
-const { Auction } = require("../models");
+const { Auction, Bid } = require("../models");
 const { AppError } = require("../../utils/app_error");
 
 class AuctionService {
@@ -47,7 +47,17 @@ class AuctionService {
         throw new AppError("Auction not found", 404);
       }
 
-      return auction;
+      // Fetch recent bids for this auction
+      const bids = await Bid.find({ auction: auctionId })
+        .populate('bidder', 'firstName lastName profileImage')
+        .sort({ amount: -1 })
+        .limit(10);
+
+      // Convert to plain object to attach bids
+      const auctionObj = auction.toObject();
+      auctionObj.bids = bids;
+
+      return auctionObj;
     } catch (error) {
       throw error;
     }
@@ -60,6 +70,9 @@ class AuctionService {
    */
   static async getAllAuctions(filters = {}) {
     try {
+      // Auto-update statuses before fetching
+      await this.refreshAuctionStatuses();
+
       const query = { 
         isDeleted: false, 
         isPublic: true, 
@@ -114,6 +127,26 @@ class AuctionService {
       })
         .populate('highestBidder', 'firstName lastName')
         .sort({ createdAt: -1 });
+
+      return auctions;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * Get auctions where user is highest bidder
+   * @param {string} bidderId - Bidder ID
+   * @returns {Promise<Array>} - List of auctions
+   */
+  static async getAuctionsByBidder(bidderId) {
+    try {
+      const auctions = await Auction.find({
+        highestBidder: bidderId,
+        isDeleted: false
+      })
+        .populate('seller', 'firstName lastName profileImage')
+        .sort({ updatedAt: -1 });
 
       return auctions;
     } catch (error) {
@@ -235,6 +268,92 @@ class AuctionService {
       return auctions;
     } catch (error) {
       throw error;
+    }
+  }
+
+  /**
+   * Place a bid on an auction
+   * @param {string} auctionId - Auction ID
+   * @param {string} bidderId - Bidder user ID
+   * @param {number} bidAmount - Bid amount
+   * @returns {Promise<Object>} - Updated auction
+   */
+  static async placeBid(auctionId, bidderId, bidAmount) {
+    try {
+      const auction = await Auction.findById(auctionId);
+
+      if (!auction || auction.isDeleted) {
+        throw new AppError("Auction not found", 404);
+      }
+
+      if (auction.status !== 'live') {
+        throw new AppError("You can only bid on live auctions", 400);
+      }
+
+      if (auction.seller.toString() === bidderId.toString()) {
+        throw new AppError("You cannot bid on your own auction", 400);
+      }
+
+      if (bidAmount <= auction.currentBid) {
+        throw new AppError(`Bid must be greater than current bid: ${auction.currentBid}`, 400);
+      }
+
+      auction.currentBid = bidAmount;
+      auction.highestBidder = bidderId;
+      auction.totalBids += 1;
+      
+      const savedAuction = await auction.save();
+
+      // Record the bid in history
+      await Bid.create({
+        auction: auctionId,
+        bidder: bidderId,
+        amount: bidAmount
+      });
+
+      return await savedAuction.populate('highestBidder', 'firstName lastName');
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * Refresh auction statuses based on current time
+   * Updates pending -> live and live -> ended
+   */
+  static async refreshAuctionStatuses() {
+    try {
+      const now = new Date();
+
+      // 1. Update pending to live if startDate has passed
+      const startResult = await Auction.updateMany(
+        {
+          status: 'pending',
+          startDate: { $lte: now },
+          isDeleted: false
+        },
+        { status: 'live' }
+      );
+
+      if (startResult.modifiedCount > 0) {
+        console.log(`[AuctionService] Activated ${startResult.modifiedCount} auctions`);
+      }
+
+      // 2. Update live to ended if endDate has passed
+      const endResult = await Auction.updateMany(
+        {
+          status: 'live',
+          endDate: { $lte: now },
+          isDeleted: false
+        },
+        { status: 'ended' }
+      );
+
+      if (endResult.modifiedCount > 0) {
+        console.log(`[AuctionService] Ended ${endResult.modifiedCount} auctions`);
+      }
+    } catch (error) {
+      console.error('[AuctionService] Error refreshing auction statuses:', error);
     }
   }
 }
