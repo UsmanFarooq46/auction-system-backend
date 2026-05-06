@@ -9,6 +9,23 @@ class AuctionService {
    * @param {Array} imagePaths - Paths to uploaded images
    * @returns {Promise<Object>} - Created auction
    */
+  static determineStatus(startDate, endDate) {
+    const now = new Date();
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    if (now < start) return 'pending';
+    if (now >= start && now < end) return 'live';
+    return 'ended';
+  }
+
+  /**
+   * Create a new auction
+   * @param {Object} auctionData - Auction data
+   * @param {string} sellerId - Seller user ID
+   * @param {Array} imagePaths - Paths to uploaded images
+   * @returns {Promise<Object>} - Created auction
+   */
   static async createAuction(auctionData, sellerId, imagePaths = []) {
     try {
       // Add seller and images to auction data
@@ -16,7 +33,7 @@ class AuctionService {
         ...auctionData,
         seller: sellerId,
         images: imagePaths,
-        status: 'pending',
+        status: this.determineStatus(auctionData.startDate, auctionData.endDate),
         currentBid: auctionData.startingPrice
       };
 
@@ -73,10 +90,10 @@ class AuctionService {
       // Auto-update statuses before fetching
       await this.refreshAuctionStatuses();
 
-      const query = { 
-        isDeleted: false, 
-        isPublic: true, 
-        status: { $in: ['live', 'pending'] } 
+      const query = {
+        isDeleted: false,
+        isPublic: true,
+        status: { $in: ['live', 'pending'] }
       };
 
       // Apply filters
@@ -174,10 +191,28 @@ class AuctionService {
         throw new AppError("You don't have permission to update this auction", 403);
       }
 
-      // Can't update if auction is live or ended
+      // If auction is live or ended, restrict which fields can be updated
       if (auction.status === 'live' || auction.status === 'ended') {
-        throw new AppError("Cannot update a live or ended auction", 400);
+        const allowedFields = ['images', 'isPublic', 'description', 'duration', 'endDate', 'startDate'];
+        const updateFields = Object.keys(updateData);
+
+        // Silently remove fields that are not allowed to be updated
+        updateFields.forEach(field => {
+          if (!allowedFields.includes(field)) {
+            delete updateData[field];
+          }
+        });
+
+        // If after filtering, there's nothing left to update, we can return early
+        if (Object.keys(updateData).length === 0) {
+          return auction; // No changes needed
+        }
       }
+
+      // Determine new status based on final dates
+      const finalStartDate = updateData.startDate || auction.startDate;
+      const finalEndDate = updateData.endDate || auction.endDate;
+      updateData.status = this.determineStatus(finalStartDate, finalEndDate);
 
       const updatedAuction = await Auction.findByIdAndUpdate(
         auctionId,
@@ -301,7 +336,7 @@ class AuctionService {
       auction.currentBid = bidAmount;
       auction.highestBidder = bidderId;
       auction.totalBids += 1;
-      
+
       const savedAuction = await auction.save();
 
       // Record the bid in history
