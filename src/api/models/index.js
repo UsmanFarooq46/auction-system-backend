@@ -3,6 +3,8 @@ const Preferences = require('./preferences.model');
 const PaymentMethod = require('./payment-method.model');
 const Auction = require('./auction.model');
 const Bid = require('./bid.model');
+const Conversation = require('./conversation.model');
+const ChatMessage = require('./chat-message.model');
 
 module.exports = {
   User,
@@ -10,4 +12,6 @@ module.exports = {
   PaymentMethod,
   Auction,
   Bid,
+  Conversation,
+  ChatMessage,
 };

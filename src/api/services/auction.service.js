@@ -337,6 +337,11 @@ class AuctionService {
       auction.highestBidder = bidderId;
       auction.totalBids += 1;
 
+      // Check for Buy It Now
+      if (auction.buyNowPrice && bidAmount >= auction.buyNowPrice) {
+        auction.status = 'sold';
+      }
+
       const savedAuction = await auction.save();
 
       // Record the bid in history

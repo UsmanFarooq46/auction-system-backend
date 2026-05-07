@@ -46,6 +46,11 @@ const auctionModelSchema = new mongoose.Schema({
     min: [1, "Reserve price must be greater than 0"],
     default: null
   },
+  buyNowPrice: {
+    type: Number,
+    min: [1, "Buy It Now price must be greater than 0"],
+    default: null
+  },
   currentBid: {
     type: Number,
     default: 0

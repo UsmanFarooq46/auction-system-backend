@@ -11,4 +11,7 @@ router.use("/admin_definitions",adminDefinitions);
 const auctionRouter = require('./auction.router');
 router.use("/auction", auctionRouter);
 
+const chatRouter = require("./chat.router");
+router.use("/chat", chatRouter);
+
 module.exports = router;

@@ -1,9 +1,12 @@
 const express = require("express");
 const app = express();
+const http = require("http");
 const morgan = require("morgan");
+const { Server } = require("socket.io");
 const errorHandler=require("./src/middleware/custome_error")
 const routers = require('./src/api/routers');
 const path = require('path');
+const { initChatSocket } = require("./src/socket/chat.socket");
 
 //middlewares
 app.use(express.json());
@@ -22,7 +25,16 @@ app.use(
 
 // port listening
 let port = process.env.PORT || 3200;
-app.listen(port, () => {
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: "*",
+  },
+});
+
+initChatSocket(io);
+
+server.listen(port, () => {
   console.log(`running on port ${port}`);
   console.log(`url: http://localhost:${port}`);
 });
